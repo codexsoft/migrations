@@ -1,0 +1,25 @@
+{
+    "name": "codexsoft/migrations",
+    "license": "MIT",
+    "description": "Write migrations in plain SQL. Based on doctrine/migrations",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": "^7.1",
+        "doctrine/migrations": "^1.5.0|~2.0|~3.0",
+        "codexsoft/sql-parser": "^1.0"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "CodexSoft\\Migrations\\": ["src/"]
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "": ["tests/unit/"]
+        }
+    }
+}
