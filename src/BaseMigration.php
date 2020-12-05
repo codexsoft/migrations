@@ -11,14 +11,11 @@ use Doctrine\DBAL\Schema\Schema;
  */
 abstract class BaseMigration extends AbstractMigration
 {
-
     private const SQL_STATEMENTS_AUTODETECT = 1;
     private const SQL_STATEMENTS_MANUAL = 2;
 
     protected const SQL_MANUAL_STATEMENT_TOKEN_OPEN = '--@statement';
     protected const SQL_MANUAL_STATEMENT_TOKEN_CLOSE = '--@/statement';
-
-    abstract public static function getContainingDirectory(): string;
 
     private function strStartsWith(string $haystack, string $needle): bool
     {
@@ -114,6 +111,11 @@ abstract class BaseMigration extends AbstractMigration
         return $statements;
     }
 
+    public static function getTemplatePath(): string
+    {
+        return __DIR__.'/migration-template.txt';
+    }
+
     /**
      * Of course, instead we can override up() method and use Schema $schema.
      * @param Schema $schema
@@ -125,7 +127,7 @@ abstract class BaseMigration extends AbstractMigration
         $platform = $this->connection->getDatabasePlatform();
         $this->abortIf(!$platform || ($platform->getName() !== 'postgresql'), 'Migration can only be executed safely on \'postgresql\'.');
 
-        $migrationSqlFile = static::getContainingDirectory().'/'.$this->getShortClass(static::class).'.sql';
+        $migrationSqlFile = self::generateUpSqlPath(static::class);
         $statemets = $this->getSqlStatements($migrationSqlFile);
 
         $this->addSql('BEGIN');
@@ -135,9 +137,26 @@ abstract class BaseMigration extends AbstractMigration
         $this->addSql('COMMIT');
     }
 
-    private function getShortClass(string $namespacedClass)
+    public static function generateUpSqlPath(string $namespacedClass)
     {
-        return (new \ReflectionClass($namespacedClass))->getShortName();
+        $reflection = new \ReflectionClass($namespacedClass);
+        return static::generateUpSqlPathByMigrationPhpFile($reflection->getFileName());
+    }
+
+    public static function generateDownSqlPath(string $namespacedClass)
+    {
+        $reflection = new \ReflectionClass($namespacedClass);
+        return static::generateDownSqlPathByMigrationPhpFile($reflection->getFileName());
+    }
+
+    public static function generateUpSqlPathByMigrationPhpFile(string $path)
+    {
+        return \pathinfo($path, PATHINFO_DIRNAME).'/'.\pathinfo($path, PATHINFO_FILENAME).'.sql';
+    }
+
+    public static function generateDownSqlPathByMigrationPhpFile(string $path)
+    {
+        return \pathinfo($path, PATHINFO_DIRNAME).'/'.\pathinfo($path, PATHINFO_FILENAME).'down.sql';
     }
 
     /**
@@ -151,7 +170,8 @@ abstract class BaseMigration extends AbstractMigration
         $platform = $this->connection->getDatabasePlatform();
         $this->abortIf(!$platform || ($platform->getName() !== 'postgresql'), 'Migration can only be executed safely on \'postgresql\'.');
 
-        $migrationSqlFile = static::getContainingDirectory().'/'.$this->getShortClass(static::class).'down.sql';
+        $migrationSqlFile = self::generateDownSqlPath(static::class);
+
         if (!\file_exists($migrationSqlFile)) {
             $this->throwIrreversibleMigrationException();
         }
