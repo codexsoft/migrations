@@ -17,6 +17,16 @@ abstract class BaseMigration extends AbstractMigration
     protected const SQL_MANUAL_STATEMENT_TOKEN_OPEN = '--@statement';
     protected const SQL_MANUAL_STATEMENT_TOKEN_CLOSE = '--@/statement';
 
+    /**
+     * Whether or not to force adding BEGIN and COMMIT statements to parsed SQL statements
+     * Is most cases it is bad idea, and isTransactional() method should be used instead
+     * @return bool
+     */
+    protected function addBeginCommitStatements(): bool
+    {
+        return false;
+    }
+
     private function strStartsWith(string $haystack, string $needle): bool
     {
         if ($needle === '') {
@@ -130,11 +140,11 @@ abstract class BaseMigration extends AbstractMigration
         $migrationSqlFile = self::generateUpSqlPath(static::class);
         $statemets = $this->getSqlStatements($migrationSqlFile);
 
-        $this->addSql('BEGIN');
+        $this->addBeginCommitStatements() && $this->addSql('BEGIN');
         foreach($statemets as $statement) {
             $this->addSql($statement);
         }
-        $this->addSql('COMMIT');
+        $this->addBeginCommitStatements() && $this->addSql('COMMIT');
     }
 
     public static function generateUpSqlPath(string $namespacedClass)
@@ -177,11 +187,11 @@ abstract class BaseMigration extends AbstractMigration
         }
         $statemets = $this->getSqlStatements($migrationSqlFile);
 
-        $this->addSql('BEGIN');
+        $this->addBeginCommitStatements() && $this->addSql('BEGIN');
         foreach($statemets as $statement) {
             $this->addSql($statement);
         }
-        $this->addSql('COMMIT');
+        $this->addBeginCommitStatements() && $this->addSql('COMMIT');
     }
 
 }
